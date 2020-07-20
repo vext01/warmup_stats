@@ -13,6 +13,8 @@ STYLE_SYMBOLS = {  # Requires \usepackage{amssymb} and \usepackage{sparklines}
     'warmup': '\\warmup',
     'good inconsistent': '\\goodinconsistent',
     'bad inconsistent': '\\badinconsistent',
+    'timeout': 'T',
+    'errored': "E",
 }
 
 

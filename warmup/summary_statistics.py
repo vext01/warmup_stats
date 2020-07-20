@@ -36,7 +36,7 @@ SKIPPED_BEFORE = 0
 SKIPPED_AFTER = 1
 
 
-def collect_summary_statistics(data_dictionaries, delta, steady_state, quality='HIGH'):
+def collect_summary_statistics(data_dictionaries, delta, steady_state, quality='LOW'):
     """Create summary statistics of a dataset with classifications.
     Note that this function returns a dict which is consumed by other code to
     create tables. It also DEFINES the JSON format which the ../bin/warmup_stats
@@ -58,9 +58,11 @@ def collect_summary_statistics(data_dictionaries, delta, steady_state, quality='
         if len(wallclock_times) == 0:
             print('WARNING: Skipping: %s from %s (no executions)' %
                    (key, machine))
-        elif len(wallclock_times[0]) == 0:
-            print('WARNING: Skipping: %s from %s (benchmark crashed)' %
-                  (key, machine))
+        #elif data_dictionaries[machine]['classifications'][key][0] == "errored":
+        #    # XXX assumes all pexecs crashed if the first did.
+        #    assert len(wallclock_times[0]) == 0
+        #    print('WARNING: Skipping: %s from %s (benchmark errored (crashed))' %
+        #          (key, machine))
         else:
             bench, vm, variant = key.split(':')
             if vm not in summary_data['machines'][machine].keys():
@@ -85,7 +87,7 @@ def collect_summary_statistics(data_dictionaries, delta, steady_state, quality='
                 # steady state. However, the last segment may be equivalent to
                 # its adjacent segments, so we first need to know which segments
                 # are steady-state segments.
-                if data_dictionaries[machine]['classifications'][key][p_exec] == 'no steady state':
+                if data_dictionaries[machine]['classifications'][key][p_exec] in ('no steady state', "timeout", "errored"):
                     continue
                 # Capture the last steady state segment for bootstrapping.
                 segment_data = list()
@@ -162,11 +164,11 @@ def collect_summary_statistics(data_dictionaries, delta, steady_state, quality='
             cat_counts = dict()
             for category, occurences in Counter(categories).most_common():
                 cat_counts[category] = occurences
-            for category in ['flat', 'warmup', 'slowdown', 'no steady state']:
+            for category in ['flat', 'warmup', 'slowdown', 'no steady state', 'timeout', 'errored']:
                 if category not in cat_counts:
                     cat_counts[category] = 0
             # Average information for all process executions.
-            if cat_counts['no steady state'] > 0:
+            if cat_counts['no steady state'] > 0 or cat_counts['timeout'] > 0 or cat_counts['errored']:
                 mean_time, error_time = None, None
                 median_iter, error_iter = None, None
                 median_time_to_steady, error_time_to_steady = None, None

@@ -171,15 +171,28 @@ def main(in_files, delta, steady_state, raw_deltas):
                     outliers = krun_data[filename]['all_outliers'][bench][index]
                 else:
                     outliers = list()
-                segments = get_segments(cpt, delta, steady_state, p_exec, outliers, raw_deltas)
-                changepoints[bench].append(segments.changepoints)
-                changepoint_means[bench].append(segments.means)
-                changepoint_vars[bench].append(segments.variances)
-                try:
-                    classifications[bench].append(segments.get_classification())
-                except ValueError:
-                    print 'Could not classify %s execution %d' % (bench, index + 1)
-                    sys.exit(1)
+
+                flag = krun_data[filename]['pexec_flags'][bench][index]
+                if flag not in ("T", "E"):
+                    segments = get_segments(cpt, delta, steady_state, p_exec, outliers, raw_deltas)
+                    changepoints[bench].append(segments.changepoints)
+                    changepoint_means[bench].append(segments.means)
+                    changepoint_vars[bench].append(segments.variances)
+                    try:
+                        classifications[bench].append(segments.get_classification())
+                    except ValueError:
+                        print 'Could not classify %s execution %d' % (bench, index + 1)
+                        sys.exit(1)
+                else:
+                    # Pexec timed out or errored (crashed).
+                    changepoints[bench].append([])
+                    changepoint_means[bench].append([])
+                    changepoint_vars[bench].append([])
+                    if flag == "T":
+                        classifications[bench].append("timeout")
+                    elif flag == "E":
+                        classifications[bench].append("errored")
+
         krun_data[filename]['changepoints'] = changepoints
         krun_data[filename]['changepoint_means'] = changepoint_means
         krun_data[filename]['changepoint_vars'] = changepoint_vars
